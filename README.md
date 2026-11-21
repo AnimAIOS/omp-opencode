@@ -26,7 +26,13 @@ Free models are auto-discovered (`cost.text.input.price === 0 && cost.text.outpu
 
 ## Auth
 
-Set `OPENCODE_API_KEY` (obtainable via `opencode auth export`) or rely on the stored Console OAuth token. The free tier is gated server-side by account quota; once exhausted, requests surface `FreeUsageLimitError` until the quota resets.
+Inference uses your OpenCode Console OAuth token so the backend recognizes a real CLI session. The token is resolved in this order:
+
+1. `OPENCODE_API_KEY` environment variable (if non-empty)
+2. `opencode auth export` — the active `integrationID: "opencode"` credential's `value.access` (cached until expiry; refreshed automatically on a 401/403 response)
+3. `"public"` fallback (free-tier only)
+
+Run `opencode auth login` if no credential is stored. The free tier is gated server-side by account quota; once exhausted, requests surface `FreeUsageLimitError` until the quota resets.
 
 ## Files
 

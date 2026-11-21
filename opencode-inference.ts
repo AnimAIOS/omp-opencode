@@ -231,6 +231,46 @@ function deltaArgsString(call: { arguments: Record<string, unknown> }): string {
 	}
 }
 
+/** Resolve the OpenCode bearer token: OPENCODE_API_KEY env first, else `opencode auth export`, else "public". */
+let cachedToken: string | null = null;
+let tokenExpiresAt = 0;
+function resolveToken(): string {
+	const envKey = process.env.OPENCODE_API_KEY;
+	if (envKey && envKey !== "") return envKey;
+	const now = Date.now();
+	if (cachedToken && now < tokenExpiresAt - 60_000) return cachedToken;
+	try {
+		const out = Bun.spawnSync(["opencode", "auth", "export"], {
+			stdout: "pipe",
+			stderr: "pipe",
+		});
+		if (out.exitCode === 0 && out.stdout) {
+			const arr = JSON.parse(
+				new TextDecoder().decode(out.stdout),
+			) as Array<{
+				integrationID: string;
+				active?: boolean;
+				value: { access?: string; key?: string; token?: string; expires?: number };
+			}>;
+			const cred =
+				arr.find((c) => c.integrationID === "opencode" && c.active !== false) ??
+				arr.find((c) => c.integrationID === "opencode");
+			if (cred) {
+				const tok = cred.value.access ?? cred.value.token ?? cred.value.key ?? "";
+				if (tok) {
+					cachedToken = tok;
+					tokenExpiresAt =
+						typeof cred.value.expires === "number"
+							? cred.value.expires
+							: now + 24 * 3600 * 1000;
+					return tok;
+				}
+			}
+		}
+	} catch {}
+	return "public";
+}
+
 export default function (pi: ExtensionAPI) {
 	const modelsById = new Map<string, FamilyApi>();
 
@@ -243,19 +283,6 @@ export default function (pi: ExtensionAPI) {
 		const stream = createAssistantMessageEventStream();
 		const spec = modelsById.get(model.id) ?? { api: PROVIDER_API, baseUrl: "" };
 		const url = (spec.baseUrl || BASE_URL) + "/chat/completions";
-		const headers: Record<string, string> = {
-			Authorization: "Bearer public",
-			"Content-Type": "application/json",
-			"User-Agent": USER_AGENT,
-			"x-opencode-client": "cli",
-			"x-opencode-session-id": SESSION_ID,
-			"x-session-affinity": SESSION_ID,
-			"X-Session-Id": SESSION_ID,
-			"x-opencode-project": "global",
-			"x-opencode-session": SESSION_ID,
-			"TypeSafe-Danger-Zone-Images": "true",
-			...options?.headers,
-		};
 		const messages = context.messages.map((m) => ({
 			role: m.role,
 			content: m.content,
@@ -269,13 +296,32 @@ export default function (pi: ExtensionAPI) {
 			temperature: options?.temperature,
 			top_p: options?.topP,
 		};
-		void fetch(url, {
-			method: "POST",
-			headers,
-			body: JSON.stringify(body),
-			signal: options?.signal,
-		})
-			.then(async (resp: Response) => {
+		const doFetch = async (token: string, retried: boolean): Promise<void> => {
+			const headers: Record<string, string> = {
+				Authorization: `Bearer ${token}`,
+				"Content-Type": "application/json",
+				"User-Agent": USER_AGENT,
+				"x-opencode-client": "cli",
+				"x-opencode-session-id": SESSION_ID,
+				"x-session-affinity": SESSION_ID,
+				"X-Session-Id": SESSION_ID,
+				"x-opencode-project": "global",
+				"x-opencode-session": SESSION_ID,
+				"TypeSafe-Danger-Zone-Images": "true",
+				...options?.headers,
+			};
+			const resp = await fetch(url, {
+				method: "POST",
+				headers,
+				body: JSON.stringify(body),
+				signal: options?.signal,
+			});
+			if (!retried && (resp.status === 401 || resp.status === 403)) {
+				cachedToken = null;
+				tokenExpiresAt = 0;
+				await resp.body?.cancel();
+				return doFetch(resolveToken(), true);
+			}
 				if (!resp.ok || !resp.body) {
 					let text = "";
 					try {
@@ -371,8 +417,8 @@ export default function (pi: ExtensionAPI) {
 					});
 				};
 				pump().catch((err: unknown) => stream.fail(err));
-			})
-			.catch((err: unknown) => stream.fail(err));
+		};
+		void doFetch(resolveToken(), false).catch((err: unknown) => stream.fail(err));
 		return stream;
 	};
 
