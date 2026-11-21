@@ -1,0 +1,16 @@
+{
+	"name": "omp-opencode-inference",
+	"version": "1.0.0",
+	"description": "OpenCode (opencode.ai) inference engine plugin for oh-my-pi (omp)",
+	"main": "opencode-inference.ts",
+	"type": "module",
+	"peerDependencies": {
+		"@oh-my-pi/pi-ai": "^19.0.0",
+		"@oh-my-pi/pi-coding-agent": "^19.0.0"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/AnimAIOS/omp-opencode-inference.git"
+	},
+	"license": "MIT"
+}
