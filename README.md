@@ -48,5 +48,5 @@ Tests use local HTTP fixtures and do not make inference requests.
 
 ## Files
 
-- `opencode.ts` — extension entry point (default factory exporting `registerProvider("opencode", …)`)
-- `extensions/` — install locations for `~/.omp/agent/extensions/`
+- `opencode-inference.ts` — extension entry point (source of truth; default factory exporting `registerProvider("opencode", …)`)
+- `extensions/` — install locations for `~/.omp/agent/extensions/`; `extensions/opencode-inference.ts` is a synced copy kept byte-identical to the root file
