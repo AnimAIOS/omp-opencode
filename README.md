@@ -7,7 +7,7 @@ Registers an `opencode` provider that dynamically scans OpenCode's free-tier mod
 ## Install
 
 ```bash
-omp plugin install git:github.com/AnimAIOS/omp-opencode-inference
+omp plugin install github:AnimAIOS/omp-opencode-inference
 ```
 
 Or load directly from a local path:
