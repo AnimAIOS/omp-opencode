@@ -1,4 +1,4 @@
-# omp-opencode-inference
+# omp-opencode
 
 OpenCode (`opencode.ai`) as an inference engine for [oh-my-pi (omp)](https://github.com/oh-my-pi/pi-ai).
 
@@ -7,13 +7,13 @@ Registers an `opencode` provider that dynamically scans OpenCode's free-tier mod
 ## Install
 
 ```bash
-omp plugin install github:AnimAIOS/omp-opencode-inference
+omp plugin install github:AnimAIOS/omp-opencode
 ```
 
 Or load directly from a local path:
 
 ```bash
-omp --extension /path/to/omp-opencode-inference.ts
+omp --extension /path/to/omp-opencode.ts
 ```
 
 ## Usage
@@ -36,5 +36,5 @@ Run `opencode auth login` if no credential is stored. The free tier is gated ser
 
 ## Files
 
-- `opencode-inference.ts` — extension entry point (default factory exporting `registerProvider("opencode", …)`)
+- `opencode.ts` — extension entry point (default factory exporting `registerProvider("opencode", …)`)
 - `extensions/` — install locations for `~/.omp/agent/extensions/`
