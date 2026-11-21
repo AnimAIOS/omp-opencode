@@ -4,6 +4,15 @@
 	"description": "OpenCode (opencode.ai) inference engine plugin for oh-my-pi (omp)",
 	"main": "opencode-inference.ts",
 	"type": "module",
+	"scripts": {
+		"test": "bun test",
+		"check": "bun check --no-script"
+	},
+	"devDependencies": {
+		"@oh-my-pi/pi-ai": "19.0.1",
+		"@oh-my-pi/pi-coding-agent": "19.0.1",
+		"@types/bun": "1.4.3"
+	},
 	"peerDependencies": {
 		"@oh-my-pi/pi-ai": "^19.0.0",
 		"@oh-my-pi/pi-coding-agent": "^19.0.0"
