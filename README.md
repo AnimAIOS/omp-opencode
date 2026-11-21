@@ -2,7 +2,7 @@
 
 OpenCode (`opencode.ai`) as an inference engine for [oh-my-pi (omp)](https://github.com/oh-my-pi/pi-ai).
 
-Registers an `opencode` provider that dynamically scans OpenCode's free-tier models from `https://opencode.ai/inference/v1/models` and streams chat inference through OpenCode's OpenAI-compatible endpoints, spoofing the harness-detection headers the backend uses to recognize its own CLI.
+Registers an `opencode` provider that discovers zero-cost chat models from `https://opencode.ai/inference/v1/models`. OMP's native OpenAI-compatible streamer handles conversation history, system instructions, tools, streaming responses, and token usage.
 
 ## Install
 
@@ -19,20 +19,32 @@ omp --extension /path/to/omp-opencode.ts
 ## Usage
 
 ```bash
-omp --model opencode/beam-free print
+omp --model opencode/hy4-flash-free print
 ```
 
 Free models are auto-discovered (`cost.text.input.price === 0 && cost.text.output.price === 0`) and reflected in `omp models` under the `opencode` provider.
 
 ## Auth
 
-Inference uses your OpenCode Console OAuth token so the backend recognizes a real CLI session. The token is resolved in this order:
+The bearer credential is resolved in this order:
 
 1. `OPENCODE_API_KEY` environment variable (if non-empty)
-2. `opencode auth export` — the active `integrationID: "opencode"` credential's `value.access` (cached until expiry; refreshed automatically on a 401/403 response)
-3. `"public"` fallback (free-tier only)
+2. `opencode auth export` — the stored `opencode` credential's access token or API key
+3. `"public"` fallback
 
-Run `opencode auth login` if no credential is stored. The free tier is gated server-side by account quota; once exhausted, requests surface `FreeUsageLimitError` until the quota resets.
+Stored credentials are cached until shortly before their recorded expiry. A 401/403 triggers one credential re-read; this is not an OAuth refresh.
+
+This extension calls OpenCode's inference API directly; OpenCode gates free-model access on its client fingerprint, reproduced here (resolved bearer credential + OpenCode's `<env>` system-prompt marker); worked model is `opencode/hy4-flash-free`.
+
+## Development
+
+```bash
+bun install --ignore-scripts
+bun test
+bun run check
+```
+
+Tests use local HTTP fixtures and do not make inference requests.
 
 ## Files
 
